@@ -12,14 +12,20 @@ import (
 	"merchant-bank-api/util"
 )
 
+// CustomerService defines the interface for customer-related operations.
 type CustomerService interface {
+	// GetAllCustomer retrieves all customers from the database.
 	GetAllCustomer() ([]models.Customer, error)
+	// PostCustomer adds a new customer to the database using the provided payload.
 	PostCustomer(payload dto.CustomerPayload) (models.Customer, error)
+	// UpdateCustomerLoggedInStatus updates the logged-in status of a customer identified by username.
 	UpdateCustomerLoggedInStatus(username string, status bool) error
 }
 
+// customerService is a concrete implementation of the CustomerService interface.
 type customerService struct{}
 
+// GetAllCustomer retrieves all customers from the "customer.json" file.
 func (s *customerService) GetAllCustomer() ([]models.Customer, error) {
 	// Open the customers file
 	file, err := os.Open("database/customer.json")
@@ -38,6 +44,7 @@ func (s *customerService) GetAllCustomer() ([]models.Customer, error) {
 	return customers, nil
 }
 
+// PostCustomer adds a new customer to the "customer.json" file.
 func (s *customerService) PostCustomer(payload dto.CustomerPayload) (models.Customer, error) {
 	// Read existing customers
 	file, err := os.Open("database/customer.json")
@@ -80,6 +87,7 @@ func (s *customerService) PostCustomer(payload dto.CustomerPayload) (models.Cust
 	return newCustomer, nil
 }
 
+// UpdateCustomerLoggedInStatus updates the logged-in status of a customer in the "customer.json" file.
 func (s *customerService) UpdateCustomerLoggedInStatus(username string, status bool) error {
 	customers, err := s.GetAllCustomer()
 	if err != nil {
@@ -108,17 +116,21 @@ func (s *customerService) UpdateCustomerLoggedInStatus(username string, status b
 	return nil
 }
 
+// NewCustomerService creates a new instance of customerService.
 func NewCustomerService() CustomerService {
 	return &customerService{}
 }
 
+// saveCustomers writes the updated list of customers back to the "customer.json" file.
 func (s *customerService) saveCustomers(customers []models.Customer) error {
+	// Open the file for writing
 	file, err := os.Create("database/customer.json")
 	if err != nil {
 		return errors.New("failed to open customer database for writing")
 	}
 	defer file.Close()
 
+	// Encode and save the customers data
 	encoder := json.NewEncoder(file)
 	if err := encoder.Encode(customers); err != nil {
 		log.Printf("Error encoding customers data: %v", err)

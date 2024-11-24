@@ -11,15 +11,23 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// JwtService defines the interface for JWT operations, including generating and verifying tokens.
 type JwtService interface {
+	// GenerateToken generates a JWT token for a given customer payload.
+	// Returns a LoginResponse containing the token or an error if token generation fails.
 	GenerateToken(payload models.Customer) (dto.LoginResponse, error)
+	// VerificationToken verifies a given JWT token string.
+	// Returns the token claims if valid, or an error if verification fails.
 	VerificationToken(token string) (jwt.MapClaims, error)
 }
 
+// jwtService is a private struct that implements the JwtService interface.
 type jwtService struct {
-	conf config.JwtConfig
+	conf config.JwtConfig // Configuration for JWT, including issuer and signing key.
 }
 
+// GenerateToken creates a JWT token using the customer payload.
+// It sets custom claims including UserId and standard claims like Issuer, ExpiresAt, and IssuedAt.
 func (js *jwtService) GenerateToken(payload models.Customer) (dto.LoginResponse, error) {
 	fmt.Println("Generate token :", payload)
 	claims := dto.JwtCustomClaims{
@@ -38,6 +46,8 @@ func (js *jwtService) GenerateToken(payload models.Customer) (dto.LoginResponse,
 	return dto.LoginResponse{Token: ss}, nil
 }
 
+// VerificationToken parses and verifies a JWT token string.
+// It checks the token's validity, issuer, and claims.
 func (js *jwtService) VerificationToken(tokenString string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return []byte(js.conf.Key), nil
@@ -52,6 +62,7 @@ func (js *jwtService) VerificationToken(tokenString string) (jwt.MapClaims, erro
 	return claims, nil
 }
 
+// NewJwtService creates a new instance of JwtService with the provided configuration.
 func NewJwtService(conf config.JwtConfig) JwtService {
 	return &jwtService{conf: conf}
 }

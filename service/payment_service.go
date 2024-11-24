@@ -10,18 +10,22 @@ import (
 	"time"
 )
 
-// PaymentService defines the interface for payment operations
+// PaymentService defines the interface for payment operations.
+// It includes a method to process payment requests.
 type PaymentService interface {
 	PostPayment(models.PaymentRequest) (models.Payment, error)
 }
 
-// paymentService is a concrete implementation of PaymentService
+// paymentService is a concrete implementation of PaymentService.
+// It handles payment processing and interacts with customer and history services.
 type paymentService struct {
 	cs CustomerService
 	hs HistoryService
 }
 
-// PostPayment processes a payment request
+// PostPayment processes a payment request.
+// It retrieves the logged-in customer, verifies the transaction, creates a payment record,
+// and logs the payment history. Returns the created payment or an error.
 func (s *paymentService) PostPayment(paymentRequest models.PaymentRequest) (models.Payment, error) {
 	customer, err := s.getLoggedInCustomer(paymentRequest.CustomerID)
 	if err != nil {
@@ -48,12 +52,14 @@ func (s *paymentService) PostPayment(paymentRequest models.PaymentRequest) (mode
 	return payment, nil
 }
 
-// NewPaymentService creates a new instance of paymentService
+// NewPaymentService creates a new instance of paymentService.
+// It requires a CustomerService and a HistoryService to function.
 func NewPaymentService(cs CustomerService, hs HistoryService) PaymentService {
 	return &paymentService{cs, hs}
 }
 
-// getLoggedInCustomer retrieves a logged-in customer by ID
+// getLoggedInCustomer retrieves a logged-in customer by ID.
+// It returns the customer if found and logged in, otherwise returns an error.
 func (s *paymentService) getLoggedInCustomer(customerID string) (*models.Customer, error) {
 	customers, err := s.cs.GetAllCustomer()
 	if err != nil {
@@ -68,14 +74,16 @@ func (s *paymentService) getLoggedInCustomer(customerID string) (*models.Custome
 	return nil, errors.New("unauthorized or invalid customer")
 }
 
-// verifyTransaction verifies the transaction ID
+// verifyTransaction verifies the transaction ID.
+// This function should implement logic to verify the transaction with a third-party service.
 func (s *paymentService) verifyTransaction(transactionID string) error {
 	// Implement logic to verify the transaction ID with the third-party service
 	log.Printf("Verifying transaction ID: %s", transactionID)
 	return nil
 }
 
-// createPaymentRecord creates and saves a new payment record
+// createPaymentRecord creates and saves a new payment record.
+// It returns the created payment or an error if the operation fails.
 func (s *paymentService) createPaymentRecord(customer *models.Customer, paymentRequest models.PaymentRequest) (models.Payment, error) {
 	payment := models.Payment{
 		CustomerID:    customer.ID,
@@ -99,7 +107,8 @@ func (s *paymentService) createPaymentRecord(customer *models.Customer, paymentR
 	return payment, nil
 }
 
-// loadPayments loads payment data from a JSON file
+// loadPayments loads payment data from a JSON file.
+// It returns a slice of payments or an error if the operation fails.
 func (s *paymentService) loadPayments() ([]models.Payment, error) {
 	file, err := os.Open("database/payment.json")
 	if err != nil {
@@ -118,7 +127,8 @@ func (s *paymentService) loadPayments() ([]models.Payment, error) {
 	return payments, nil
 }
 
-// savePayments saves payment data to a JSON file
+// savePayments saves payment data to a JSON file.
+// It returns an error if the operation fails.
 func (s *paymentService) savePayments(payments []models.Payment) error {
 	file, err := os.OpenFile("database/payment.json", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {

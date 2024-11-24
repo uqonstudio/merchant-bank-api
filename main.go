@@ -22,6 +22,8 @@ func main() {
 	NewServer().Start()
 }
 
+// initialRoute sets up the initial routing for the server.//+
+// It defines the endpoints and associates them with their respective handlers.//+
 func (s *Server) initialRoute() {
 	s.engine.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
