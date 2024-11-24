@@ -14,6 +14,22 @@ type authController struct {
 	rg      *gin.RouterGroup
 }
 
+func (c *authController) logoutHandler(ctx *gin.Context) {
+	var logoutRequest dto.LogoutRequest
+	if err := ctx.ShouldBindJSON(&logoutRequest); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		return
+	}
+
+	_, err := c.service.Logout(logoutRequest)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, "filed to logout")
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
+}
+
 func (c *authController) loginHandler(ctx *gin.Context) {
 	var payload dto.LoginRequest
 	err := ctx.ShouldBindJSON(&payload)
@@ -29,8 +45,9 @@ func (c *authController) loginHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, data)
 }
 func (c *authController) Route() {
-	router := c.rg.Group("login")
-	router.POST("/", c.loginHandler)
+	router := c.rg.Group("auth")
+	router.POST("/login", c.loginHandler)
+	router.POST("/logout", c.logoutHandler)
 }
 
 func NewAuthController(as service.AuthService, rg *gin.RouterGroup) *authController {

@@ -7,17 +7,15 @@ import (
 	"log"
 	"os"
 
-	"golang.org/x/crypto/bcrypt"
-
 	"merchant-bank-api/models"
 	"merchant-bank-api/models/dto"
+	"merchant-bank-api/util"
 )
 
 type CustomerService interface {
 	GetAllCustomer() ([]models.Customer, error)
 	PostCustomer(payload dto.CustomerPayload) (models.Customer, error)
 	UpdateCustomerLoggedInStatus(username string, status bool) error
-	// LoadCustomers() ([]models.Customer, error)
 }
 
 type customerService struct{}
@@ -52,7 +50,7 @@ func (s *customerService) PostCustomer(payload dto.CustomerPayload) (models.Cust
 	json.NewDecoder(file).Decode(&customers)
 
 	// Hash the password
-	hashedPassword, err := hashPassword(payload.Password)
+	hashedPassword, err := util.Encrypt(payload.Password)
 	if err != nil {
 		return models.Customer{}, err
 	}
@@ -112,14 +110,6 @@ func (s *customerService) UpdateCustomerLoggedInStatus(username string, status b
 
 func NewCustomerService() CustomerService {
 	return &customerService{}
-}
-
-func hashPassword(password string) (string, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return "", err
-	}
-	return string(hashedPassword), nil
 }
 
 func (s *customerService) saveCustomers(customers []models.Customer) error {

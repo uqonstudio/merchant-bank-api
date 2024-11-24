@@ -39,7 +39,8 @@ func NewServer() *Server {
 	c, _ := config.NewConfig()
 	cService := service.NewCustomerService()
 	jwtService := service.NewJwtService(c.JwtConfig)
-	aService := service.NewAuthService(jwtService, cService)
+	hService := service.NewHistoryService()
+	aService := service.NewAuthService(jwtService, cService, hService)
 
 	return &Server{
 		as:     aService,

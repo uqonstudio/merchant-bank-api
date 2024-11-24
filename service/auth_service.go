@@ -1,24 +1,35 @@
 package service
 
 import (
-	"encoding/json"
 	"errors"
-	"io"
-	"log"
 	"merchant-bank-api/models"
 	"merchant-bank-api/models/dto"
 	"merchant-bank-api/util"
-	"os"
-	"time"
 )
 
 type AuthService interface {
 	PostLogin(payload dto.LoginRequest) (dto.LoginResponse, error)
+	Logout(payload dto.LogoutRequest) (string, error)
 }
 
 type authService struct {
 	jwtservice JwtService
 	cs         CustomerService
+	hs         HistoryService
+}
+
+func (s *authService) Logout(payload dto.LogoutRequest) (string, error) {
+	customers, err := s.cs.GetAllCustomer()
+	if err != nil {
+		return "", err
+	}
+
+	for i, customer := range customers {
+		if customer.ID == payload.CustomerID && customer.LoggedIn {
+			return s.processLogout(&customers[i])
+		}
+	}
+	return "Unauthorized or invalid customer", nil
 }
 
 func (s *authService) PostLogin(payload dto.LoginRequest) (dto.LoginResponse, error) {
@@ -34,7 +45,7 @@ func (s *authService) PostLogin(payload dto.LoginRequest) (dto.LoginResponse, er
 		if s.isPasswordValid(payload.Password, customer.Password) && (payload.Username == customer.Username) {
 			// fmt.Println("is selected user : ", customer)
 			customers[i].LoggedIn = true
-			// logHistory(customer.ID, "login")
+			_ = s.hs.LogHistory(customer.ID, "loggin")
 			err := s.cs.UpdateCustomerLoggedInStatus(customer.Username, true)
 			if err != nil {
 				return dto.LoginResponse{}, err
@@ -46,8 +57,8 @@ func (s *authService) PostLogin(payload dto.LoginRequest) (dto.LoginResponse, er
 	return dto.LoginResponse{}, errors.New("invalid credentials")
 }
 
-func NewAuthService(jwtservice JwtService, cs CustomerService) AuthService {
-	return &authService{jwtservice, cs}
+func NewAuthService(jwtservice JwtService, cs CustomerService, hs HistoryService) AuthService {
+	return &authService{jwtservice, cs, hs}
 }
 
 func (s *authService) isPasswordValid(inputPassword, storedPassword string) bool {
@@ -63,49 +74,14 @@ func (s *authService) createLoginResponse(customer models.Customer) (dto.LoginRe
 	return token, nil
 }
 
-func logHistory(customerID, action string) {
-	history := models.History{
-		CustomerID: customerID,
-		Action:     action,
-		Timestamp:  time.Now().Format(time.RFC3339),
+// processLogout updates the customer's logged-in status and logs the logout action
+func (s *authService) processLogout(customer *models.Customer) (string, error) {
+	customer.LoggedIn = false
+	if err := s.hs.LogHistory(customer.ID, "logout"); err != nil {
+		return "", err
 	}
-
-	// Open the history file
-	file, err := os.Open("database/history.json")
-	if err != nil {
-		log.Printf("Error opening history file: %v", err)
-		return
+	if err := s.cs.UpdateCustomerLoggedInStatus(customer.Username, false); err != nil {
+		return "", err
 	}
-	defer file.Close()
-
-	// Read existing history entries
-	var histories []models.History
-	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(&histories); err != nil && err != io.EOF {
-		log.Printf("Error decoding history file: %v", err)
-		return
-	}
-
-	// Append the new history entry
-	histories = append(histories, history)
-
-	// Write back to the file
-	UpdateHistory(histories)
-}
-
-func UpdateHistory(histories []models.History) {
-	// Open the history file with write permissions
-	file, err := os.OpenFile("database/history.json", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
-	if err != nil {
-		log.Printf("Error opening history file for writing: %v", err)
-		return
-	}
-	defer file.Close()
-
-	// Write back to the file
-	encoder := json.NewEncoder(file)
-	if err := encoder.Encode(histories); err != nil {
-		log.Printf("Error encoding history data: %v", err)
-		return
-	}
+	return "Logout successful", nil
 }

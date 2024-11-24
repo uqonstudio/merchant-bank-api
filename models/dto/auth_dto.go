@@ -20,3 +20,7 @@ type CustomerPayload struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
+
+type LogoutRequest struct {
+	CustomerID string `json:"customer_id"`
+}
