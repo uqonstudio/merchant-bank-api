@@ -3,12 +3,14 @@ package main
 import (
 	"merchant-bank-api/config"
 	"merchant-bank-api/controller"
+	"merchant-bank-api/middleware"
 	"merchant-bank-api/service"
 
 	"github.com/gin-gonic/gin"
 )
 
 type Server struct {
+	am     middleware.AuthMiddleware
 	ps     service.PaymentService
 	as     service.AuthService
 	cs     service.CustomerService
@@ -27,9 +29,9 @@ func (s *Server) initialRoute() {
 		})
 	})
 	routerGroup := s.engine.Group("/api")
-	controller.NewCustomerController(s.cs, routerGroup).Route()
-	controller.NewAuthController(s.as, routerGroup).Route()
-	controller.NewPaymentController(s.ps, routerGroup).Route()
+	controller.NewCustomerController(s.cs, routerGroup).Route()      //get, post customer
+	controller.NewAuthController(s.as, routerGroup).Route()          //auth/login, logout
+	controller.NewPaymentController(s.ps, s.am, routerGroup).Route() //payment with middleware
 }
 
 func (s *Server) Start() {
@@ -44,8 +46,10 @@ func NewServer() *Server {
 	hService := service.NewHistoryService()
 	aService := service.NewAuthService(jwtService, cService, hService)
 	pService := service.NewPaymentService(cService, hService)
+	authMidleware := middleware.NewAuthMiddleware(jwtService)
 
 	return &Server{
+		am:     authMidleware,
 		ps:     pService,
 		as:     aService,
 		cs:     cService,

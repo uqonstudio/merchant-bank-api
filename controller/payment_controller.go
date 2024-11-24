@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"merchant-bank-api/middleware"
 	"merchant-bank-api/models"
 	"merchant-bank-api/service"
 
@@ -11,6 +12,7 @@ import (
 
 type paymentController struct {
 	service service.PaymentService
+	am      middleware.AuthMiddleware
 	rg      *gin.RouterGroup
 }
 
@@ -33,6 +35,6 @@ func (c *paymentController) Route() {
 	router.POST("/", c.postPaymentHandlers)
 }
 
-func NewPaymentController(ps service.PaymentService, rg *gin.RouterGroup) *paymentController {
-	return &paymentController{service: ps, rg: rg}
+func NewPaymentController(ps service.PaymentService, am middleware.AuthMiddleware, rg *gin.RouterGroup) *paymentController {
+	return &paymentController{service: ps, am: am, rg: rg}
 }
