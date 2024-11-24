@@ -9,6 +9,7 @@ import (
 )
 
 type Server struct {
+	as     service.AuthService
 	cs     service.CustomerService
 	js     service.JwtService
 	engine *gin.Engine
@@ -26,6 +27,7 @@ func (s *Server) initialRoute() {
 	})
 	routerGroup := s.engine.Group("/api")
 	controller.NewCustomerController(s.cs, routerGroup).Route()
+	controller.NewAuthController(s.as, routerGroup).Route()
 }
 
 func (s *Server) Start() {
@@ -37,8 +39,10 @@ func NewServer() *Server {
 	c, _ := config.NewConfig()
 	cService := service.NewCustomerService()
 	jwtService := service.NewJwtService(c.JwtConfig)
+	aService := service.NewAuthService(jwtService, cService)
 
 	return &Server{
+		as:     aService,
 		cs:     cService,
 		js:     jwtService,
 		engine: gin.Default(),
